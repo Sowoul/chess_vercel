@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .bd{
+            height: 500px;
+            width: 500px;
+            position: relative;
+            
+        }
+        .rows{
+            letter-spacing: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="board" id="bd"></div>
+        <form action="">
+            <input id="from" placeholder="Start position">
+            <input id="to" placeholder="End position">
+            <button id="" onclick="moved(event)"></button>
+        </form>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.1/socket.io.min.js"></script>
+    <script>
+        var socket = io.connect('/')
+        var board = ""
+        socket.on(
+            'connect' , function(){
+                console.log("Connected")
+            }
+        )
+
+        function moved(event){
+            event.preventDefault()
+            const start = document.getElementById("from").value
+            const end = document.getElementById("to").value
+
+            socket.emit(
+                'move', {
+                    board: board,
+                    start:start,
+                    to:end,
+                }
+            )
+        }   
+        socket.on(
+            'getboard', function(msg){
+                board=msg.board
+                console.log(msg.board)
+                document.getElementById("bd").innerHTML = ""
+                document.getElementById("bd").innerHTML = "{% for row in board %}<div class='rows'>{% for elem in row %}{{elem['type'] if elem else ' .  '}}{% endfor %}</div>{% endfor %}"
+            }
+        )
+    </script>
+</body>
+</html>

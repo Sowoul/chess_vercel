@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Game</title>
+</head>
+<body>
+    <div id="bd"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var bd = document.getElementById("bd");
+
+            for (let rowIndex = 0; rowIndex < 8; rowIndex++) {
+                for (let colIndex = 0; colIndex < 8; colIndex++) {
+                    let square = document.createElement('button');
+                    square.className = 'square';
+                    square.id = colIndex + "" + rowIndex;
+
+                    square.addEventListener('click', function(event) {
+                        console.log(`Button clicked at: ${square.id}`);
+                    });
+
+                    bd.appendChild(square);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
