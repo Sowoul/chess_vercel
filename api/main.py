@@ -1,6 +1,8 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO
-import json
+
+
+
 
 class Piece:
     def __init__(self, val=0, color=None, type=None):
@@ -17,6 +19,10 @@ class Piece:
             'type': self.type
         }
 
+
+
+
+
 class Board:
     def __init__(self):
         self.board = [[None] * 8 for _ in range(8)]
@@ -31,9 +37,9 @@ class Board:
         self.board[-1][1] = self.board[-1][-2] = Piece(3, 'W', '♘')
         self.board[0][2] = self.board[0][-3] = Piece(3, 'B', '♝')
         self.board[-1][2] = self.board[-1][-3] = Piece(3, 'W', '♗')
-        self.board[0][3] = Piece(100, 'B', '♚')
+        self.board[0][4] = Piece(100, 'B', '♚')
         self.board[-1][4] = Piece(100, 'W', '♔')
-        self.board[0][4] = Piece(9, 'B', '♛')
+        self.board[0][3] = Piece(9, 'B', '♛')
         self.board[-1][3] = Piece(9, 'W', '♕')
 
     def move(self, start, end):
@@ -65,6 +71,12 @@ class Board:
             final+='\n\n'
             rw+=1
         return final
+
+undo=[]
+redo=[]
+
+
+
 def make_board(arr):
     temp=Board()
     for i,row in enumerate(arr):
@@ -73,26 +85,35 @@ def make_board(arr):
                 temp.board[i][j]=Piece(elem['val'] , elem['color'], elem['type'])
     return temp
 
+
+
 board=Board()
 board.setup()
+
+
 
 app=Flask(__name__)
 socket = SocketIO(app=app)
 
+
+
+
+
 @app.route('/')
 def index():
-    try:
-        with open('state.json' , 'r') as file:
-            global board
-            board=make_board(json.loads(file.read()))
-    except:
-        render_template('index.html', board=board.to_dict())
     return render_template('index.html', board=board.to_dict())
+
+
+
+
 
 @socket.on('connect')
 def aa():
-    print(board)
     socket.emit('getboard' , {'board' : board.to_dict()})
+
+
+
+
 
 @socket.on('move')
 def mv(msg):
@@ -101,23 +122,62 @@ def mv(msg):
         socket.emit('failure' , {'reason' : 'No Piece Selected'})
         return
     temp.move(msg["start"] , msg["to"])
-    print(temp)
     store = temp.to_dict()
-    with open('state.json' , 'w') as file:
-        json.dump(store, file)
-    file.close()
+    undo.append(store)
+    global redo
+    redo=[]
     socket.emit('getboard', {"board":store})
+
+
+
+
 
 @socket.on('resetboard')
 def reset():
     global board
     board =  Board()
+    global undo
+    undo=[]
+    global redo
+    redo=[]
     board.setup()
     store=board.to_dict()
-    with open('state.json','w') as file:
-        json.dump( store, file)
-    print(store)
     socket.emit('getboard', {'board':store})
+
+
+
+
+
+@socket.on('undo')
+def und():
+    if len(undo)<=1:
+        if len(undo)==1:
+            redo.append(undo.pop())
+        temp= Board()
+        temp.setup()
+        store=temp.to_dict()
+        socket.emit('getboard',{ 'board'  : store})
+        return
+    redo.append(undo.pop())
+    global board
+    board=make_board(undo[-1])
+    socket.emit('getboard',{'board' :undo[-1]})
+
+
+
+
+@socket.on('redo')
+def red():
+    if len(redo)==0:
+        return
+    undo.append(redo.pop())
+    global board
+    board=make_board(undo[-1])
+    socket.emit('getboard',{'board' :undo[-1]})
+
+
+
+
 
 if __name__ == '__main__':
     socket.run(app=app, debug=True, port=8080)
